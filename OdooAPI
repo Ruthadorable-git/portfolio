@@ -1,0 +1,118 @@
+import xmlrpc.client
+import datetime
+
+
+class Odoo():
+    def __init__(self):
+        """
+            Create
+            Read
+            Update
+            Delete
+        """
+        self.DATA = ""  # db name
+        self.USER = ""  # email address
+        self.PASS = ""  # password
+        self.PORT = ""  # port
+        self.URL = ""  # base url
+        self.URL_COMMON = "{}:{}/xmlrpc/2/common".format(
+            self.URL, self.PORT)
+        self.URL_OBJECT = "{}:{}/xmlrpc/2/object".format(
+            self.URL, self.PORT)
+
+    def authenticateOdoo(self):
+        self.ODOO_COMMON = xmlrpc.client.ServerProxy(self.URL_COMMON)
+        self.ODOO_OBJECT = xmlrpc.client.ServerProxy(self.URL_OBJECT)
+        self.UID = self.ODOO_COMMON.authenticate(
+            self.DATA
+            , self.USER
+            , self.PASS
+            , {})
+
+    def partnerAdd(self, partnerRow):
+        partner_id = self.ODOO_OBJECT.execute_kw(
+            self.DATA
+            , self.UID
+            , self.PASS
+            , 'res.partner'
+            , 'create'
+            , partnerRow)
+        return partner_id
+
+    def partnerCheck(self, partnerName):
+        odoo_filter = [[("name", "=", partnerName)]]
+        partner_id = self.ODOO_OBJECT.execute_kw(
+            self.DATA
+            , self.UID
+            , self.PASS
+            , 'res.partner'
+            , 'search'
+            , odoo_filter)
+        return partner_id[0]
+
+    def partnerRead(self, partner_id):
+        odoo_filter = [[("id", "=", partner_id)]]
+        result = self.ODOO_OBJECT.execute_kw(
+            self.DATA
+            , self.UID
+            , self.PASS
+            , 'res.partner'
+            , 'read'
+            , [partner_id]
+            , {"fields": ["name", "id", "website"]})
+        return result
+
+    def partnerUpdate(self, partner_id, odoo_filter):
+        update_result = self.ODOO_OBJECT.execute_kw(
+            self.DATA
+            , self.UID
+            , self.PASS
+            , 'res.partner'
+            , 'write'
+            , [partner_id, odoo_filter])
+        return update_result
+
+    def partnerDelete(self, partner_id):
+        delete_result = self.ODOO_OBJECT.execute_kw(
+            self.DATA
+            , self.UID
+            , self.PASS
+            , 'res.partner'
+            , 'unlink'
+            , [partner_id])
+        return delete_result
+
+
+def main():
+    od = Odoo()
+    od.authenticateOdoo()
+
+    # Examples:
+
+    # CREATE
+    partner_row = [{"name": "HLX Studios"
+                       , "phone": "888-600-4938"
+                       , "website": "http://hlx.co"
+                       , "country_id": "233"}]
+    od.partnerAdd(partner_row)
+
+    # SEARCH
+    partner_id = od.partnerCheck("HLX")
+    print(partner_id)
+
+    # READ
+    result = od.partnerRead(partner_id)
+    print(result)
+
+    # UPDATE
+    odoo_filter = [{"email": "info@hlx.co", "street": "2628 east 18th street"}]
+    result = od.partnerUpdate(partner_id, odoo_filter)
+    print(result)
+
+    # DELETE
+    result = od.partnerDelete(partner_id)
+    print(result)
+
+
+if __name__ == '__main__':
+    main()
